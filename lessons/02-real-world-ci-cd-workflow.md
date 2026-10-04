@@ -1,123 +1,104 @@
-# Lesson 02 — Real-World CI/CD Workflow
+# Lesson 2 — What exactly happens between "code" and "LIVE"?
 
-## 1. How CI/CD Works in a Real Company
+In the previous lesson, we learned the basic meaning of CI/CD.
 
-A common real-world workflow looks like this:
+Now let's understand the complete journey of code from a developer's machine to a LIVE application.
+
+> **Code does not directly go from GitHub to production. Multiple steps happen in between.**
+
+---
+
+## 1. The Big Picture
+
+A simplified real-world flow looks like this:
 
     Developer
         ↓
-    Feature Branch
-        ↓
-    Pull Request
-        ↓
-    Code Review
-        ↓
-    Merge to main
+    git push
         ↓
     GitHub
         ↓
-    Webhook
+    Jenkins Trigger
         ↓
-    Jenkins
+    Checkout Code
         ↓
-    Pipeline
+    Install Dependencies
         ↓
-    Build / Test / Deploy
+    Test
+        ↓
+    Build
+        ↓
+    Package / Artifact
+        ↓
+    Deploy
+        ↓
+    Production
+        ↓
+    LIVE
 
-The important idea is that **developers usually don't directly deploy production code**.
-
-The CI/CD pipeline handles the repeatable deployment process.
-
----
-
-## 2. Developer Creates a Feature Branch
-
-A developer normally works on a separate branch.
-
-Example:
-
-    main
-      │
-      └── feature/login
-
-The developer writes code and pushes the branch to GitHub.
+Every step has a specific purpose.
 
 ---
 
-## 3. Pull Request
+## 2. Developer Writes Code
 
-The developer creates a **Pull Request (PR)**.
+A developer works on the application locally.
 
-A PR allows the team to:
-
-- Review the code
-- Discuss changes
-- Run CI checks
-- Find problems before merging
-
-Example:
-
-    feature/login
-          ↓
-     Pull Request
-          ↓
-      Code Review
-          ↓
-         main
-
----
-
-## 4. Merge to Main
-
-After the PR is reviewed and approved, it can be merged into the main branch.
-
-The main branch commonly represents code that is ready for the next deployment stage.
-
----
-
-## 5. GitHub Webhook
-
-After code is pushed or merged, GitHub can notify Jenkins using a **webhook**.
-
-A webhook is simply an HTTP notification.
-
-    GitHub
-       │
-       │ "Something happened"
+    Developer
        ↓
-    Jenkins
+    React / Next.js Code
+       ↓
+    Local Testing
 
-For example, GitHub can notify Jenkins that a push happened on the main branch.
+The developer may run commands such as npm run dev, npm test, and npm run build.
+
+Once the change is ready, the developer commits it.
+
+---
+
+## 3. Developer Pushes Code
+
+The developer pushes the commit to GitHub:
+
+    git push origin main
+
+Now the code exists in the remote Git repository.
+
+    Developer
+        ↓
+    git push
+        ↓
+    GitHub
 
 ### Important
 
-A webhook normally **does not send the complete source code to Jenkins**.
+**git push does not mean the application is LIVE.**
 
-It tells Jenkins that an event happened. Jenkins then checks out the required source code.
+It only sends the committed code to the remote repository.
 
 ---
 
-## 6. Jenkins Starts the Pipeline
+## 4. Jenkins Gets Triggered
 
-Jenkins receives the event and starts the configured job/pipeline.
+Jenkins needs to know that something changed in GitHub.
+
+A common method is a **webhook**.
 
     GitHub
-       ↓
-    Webhook
+       │
+       │  "A push happened"
        ↓
     Jenkins
-       ↓
-    Checkout Code
-       ↓
-    Run Jenkinsfile
 
-The Jenkinsfile contains the instructions for the pipeline.
+The webhook tells Jenkins that an event occurred.
+
+It does not normally send the complete source code. Jenkins then obtains the required code from GitHub.
 
 ---
 
-## 7. Jenkins Gets the Code
+## 5. Jenkins Gets the Code
 
-Jenkins checks out the required Git revision into a workspace on a Jenkins agent.
+Jenkins checks out the required Git revision.
 
     GitHub Repository
            ↓
@@ -125,193 +106,325 @@ Jenkins checks out the required Git revision into a workspace on a Jenkins agent
            ↓
     Jenkins Workspace
 
-The workspace is where Jenkins runs commands such as:
+The workspace is where Jenkins runs the commands required by the pipeline.
+
+For example:
 
     npm ci
-    npm run lint
     npm test
     npm run build
 
 ---
 
-## 8. Jenkins Runs the Pipeline Stages
+## 6. Install Dependencies
 
-A typical CI pipeline might be:
+Before the application can be built or tested, its dependencies need to be available.
 
-    Checkout
-       ↓
-    Install Dependencies
-       ↓
-    Lint
-       ↓
-    Test
-       ↓
-    Build
+For a Node.js project, Jenkins commonly runs:
 
-If one important stage fails, the pipeline normally stops.
+    npm ci
 
-For example:
+This installs dependencies based on the lock file.
 
-    Checkout ✓
-    Install  ✓
-    Lint     ✓
-    Test     ✗
-    Build    ✗
-    Deploy   ✗
-
-This prevents broken code from continuing to deployment.
+    package.json
+    package-lock.json
+           ↓
+          npm ci
+           ↓
+       node_modules
 
 ---
 
-## 9. Deployment
+## 7. Run Tests
 
-If all required checks pass, the pipeline can continue to deployment.
-
-Example:
-
-    Build
-      ↓
-    Docker Image
-      ↓
-    Container Registry
-      ↓
-    Staging
-      ↓
-    Health Check
-      ↓
-    Production
-
-The exact deployment process depends on the company's infrastructure.
-
----
-
-## 10. Complete Workplace Flow
-
-This is the main diagram to remember:
-
-    Developer
-        ↓
-    Feature Branch
-        ↓
-    Pull Request
-        ↓
-    Code Review
-        ↓
-    Merge to main
-        ↓
-    GitHub
-        ↓
-    Webhook
-        ↓
-    Jenkins Controller
-        ↓
-    Jenkins Agent
-        ↓
-    Checkout Code
-        ↓
-    Jenkinsfile
-        ↓
-    Install
-        ↓
-    Lint
-        ↓
-    Test
-        ↓
-    Build
-        ↓
-    Artifact / Docker Image
-        ↓
-    Staging
-        ↓
-    Health / Smoke Test
-        ↓
-    Production
-
----
-
-## 11. What Does Jenkins Actually Do?
-
-Jenkins mainly **orchestrates the process**.
-
-For example:
-
-    Jenkins
-      │
-      ├── npm ci
-      ├── npm test
-      ├── npm run build
-      ├── docker build
-      ├── docker push
-      └── deploy
-
-The tools themselves perform the actual work.
-
-So:
-
-- Git handles source control
-- npm runs Node.js commands
-- Docker builds containers
-- Kubernetes can run/manage containers
-- Jenkins coordinates these steps
-
----
-
-## ⭐ Important Interview Points
-
-### What happens after a developer merges code?
-
-> The Git repository can trigger Jenkins, commonly through a webhook. Jenkins checks out the required revision and runs the pipeline defined by the Jenkinsfile.
-
-### What is a webhook?
-
-> A webhook is an HTTP notification sent by one system to another when an event occurs.
-
-### Does a GitHub webhook send the complete source code?
-
-> Usually no. It notifies Jenkins about the event, and Jenkins then checks out the required source code.
-
-### Why use a feature branch and PR?
-
-> It separates development work from the main branch and provides code review and automated validation before merging.
-
-### What happens if a test fails?
-
-> The pipeline normally stops at that stage, preventing the failed version from moving to later deployment stages.
-
----
-
-## 🧠 Remember
-
-Think about the workflow in four parts:
-
-    Developer
-       ↓
-    GitHub
-       ↓
-    Jenkins
-       ↓
-    Deployment
-
-And the detailed version:
+Jenkins runs automated checks.
 
     Code
      ↓
-    PR + Review
+    Tests
      ↓
-    Merge
+    PASS / FAIL
+
+If tests fail:
+
+    Test ❌
+      ↓
+    Pipeline stops
+      ↓
+    No Deployment
+
+This is one of the main benefits of CI/CD:
+
+> **Broken code can be detected before it reaches production.**
+
+---
+
+## 8. Build the Application
+
+If the tests pass, Jenkins can build the application.
+
+For example:
+
+    npm run build
+
+The build converts source code into production-ready output.
+
+    Source Code
+        ↓
+       Build
+        ↓
+    Production Output
+
+Examples:
+
+    Next.js → .next/
+    Frontend → dist/
+    Java → .jar
+    Application → .zip
+    Docker → Docker image
+
+---
+
+## 9. Create / Store the Artifact
+
+The build output can become an **artifact**.
+
+    Source Code
+         ↓
+        Build
+         ↓
+      Artifact
+
+An artifact gives us a specific version that can be transferred or deployed.
+
+For example:
+
+    my-app
+    version: 9ab42ef
+
+This becomes especially important when we learn artifact management, Docker images, versioning, and rollbacks.
+
+---
+
+## 10. Deploy
+
+Now the validated application version is deployed to an environment.
+
+    Artifact / Docker Image
+              ↓
+           Deployment
+              ↓
+            Server
+              ↓
+          Application
+
+The deployment method depends on the infrastructure.
+
+It could use:
+
+- SSH
+- SCP/rsync
+- Docker
+- Kubernetes
+- Cloud platforms
+- Deployment scripts
+
+---
+
+## 11. Application Becomes LIVE
+
+After deployment, the application starts running in the target environment.
+
+For a web application:
+
+    User
      ↓
+    Internet
+     ↓
+    Server
+     ↓
+    Application
+     ↓
+    Database
+
+The user can then access the application through its domain.
+
+    example.com
+         ↓
+    Production Server
+         ↓
+    Next.js Application
+         ↓
+        LIVE
+
+---
+
+# ⭐ Complete Build-to-LIVE Flow
+
+This is the most important diagram from this lesson:
+
+    Developer
+        ↓
+    git push
+        ↓
+    GitHub
+        ↓
     Webhook
-     ↓
+        ↓
     Jenkins
-     ↓
+        ↓
     Checkout
-     ↓
+        ↓
+    Install Dependencies
+        ↓
     Test
-     ↓
+        ↓
     Build
-     ↓
+        ↓
+    Package / Artifact
+        ↓
     Deploy
+        ↓
+    Production
+        ↓
+    Health / Smoke Check
+        ↓
+        LIVE
 
-**One-line memory:**
+---
 
-> **Developer pushes → GitHub triggers Jenkins → Jenkins gets the code → pipeline validates/builds → deployment happens.**
+## 12. Build Time vs Runtime
+
+This is an important concept.
+
+### Build time
+
+Jenkins is preparing the application.
+
+    Source Code
+        ↓
+      Install
+        ↓
+       Test
+        ↓
+      Build
+        ↓
+     Artifact
+
+### Runtime
+
+The application is actually serving users.
+
+    User
+     ↓
+    Internet
+     ↓
+    Server
+     ↓
+    Application
+     ↓
+    Database
+
+Think of it as:
+
+    BUILD TIME
+    Code → Build → Artifact
+
+    RUNTIME
+    User → Server → Application → Database
+
+---
+
+## 13. What if Something Fails?
+
+CI/CD is designed to stop when an important step fails.
+
+Example:
+
+    Checkout     ✓
+    Install      ✓
+    Test         ✓
+    Build        ✗
+    Deploy       ✗
+
+Because the build failed, deployment does not continue.
+
+Another example:
+
+    Build        ✓
+    Deploy       ✓
+    Health Check ✗
+
+The deployment may be considered unsuccessful. Later we will learn rollback strategies for this situation.
+
+---
+
+# ⭐ Interview Points
+
+### Does code go directly from GitHub to production?
+
+> **No. Code normally passes through several stages such as checkout, dependency installation, testing, building, artifact creation, deployment, and verification.**
+
+### What happens after git push?
+
+> **The code reaches the Git repository. A configured webhook or other trigger can notify Jenkins, which then checks out the required revision and starts the pipeline.**
+
+### Why do we build the application?
+
+> **The build converts source code into production-ready output that can be packaged, stored, or deployed.**
+
+### Why do we create an artifact?
+
+> **An artifact gives us a specific build output that can be stored, transferred, deployed, and potentially used for rollback.**
+
+### What happens if a test fails?
+
+> **The pipeline normally stops at the failed stage and prevents that version from moving to deployment.**
+
+### What is the difference between build time and runtime?
+
+> **Build time is when the application is prepared; runtime is when the deployed application is actually running and serving users.**
+
+---
+
+# 🧠 Remember
+
+Think about the journey in three simple parts:
+
+    CODE
+     ↓
+    CI
+     ↓
+    BUILD
+     ↓
+    ARTIFACT
+     ↓
+    DEPLOY
+     ↓
+    LIVE
+
+Or the real-world version:
+
+    Developer
+        ↓
+    GitHub
+        ↓
+    Jenkins
+        ↓
+    Checkout
+        ↓
+    Install
+        ↓
+    Test
+        ↓
+    Build
+        ↓
+    Artifact
+        ↓
+    Deploy
+        ↓
+    Production
+        ↓
+        LIVE
+
+> **The key idea: Code is only the starting point. CI/CD is the automated journey that takes validated code and turns it into a running production application.**
