@@ -1,10 +1,38 @@
-# Lesson 01 — CI/CD Fundamentals
+# Lesson 1 — Foundations
 
-## 1. What is CI/CD?
+This lesson builds the basic mental model of CI/CD before we go deeper into Jenkins.
 
-CI/CD is a way to **automate the process of building, testing, and delivering software**.
+---
 
-Instead of doing everything manually, tools such as Jenkins can run these steps automatically.
+## 1. What is Deployment?
+
+**Deployment** means taking a particular version of your application and making it available in an environment where it can run.
+
+Simple example:
+
+```text
+Your Code
+   ↓
+Build
+   ↓
+Application Version
+   ↓
+Deploy
+   ↓
+Server
+   ↓
+Application is Running
+```
+
+Deployment does **not** necessarily mean production. You can deploy to:
+
+- Development
+- Staging
+- Production
+
+### Easy definition
+
+> **Deployment = making a specific version of an application available to run in an environment.**
 
 ---
 
@@ -12,49 +40,54 @@ Instead of doing everything manually, tools such as Jenkins can run these steps 
 
 **CI = Continuous Integration**
 
-It means developers regularly integrate their code into a shared repository, and an automated process checks whether the new code works.
+CI means developers frequently push code to a shared repository, and an automated process checks whether the code is still working.
 
-Typical CI flow:
+Typical CI:
 
 ```text
 Developer
-   ↓
-Push Code
-   ↓
-Git Repository
-   ↓
-Jenkins / CI Tool
-   ↓
+    ↓
+git push
+    ↓
+GitHub
+    ↓
+CI Tool / Jenkins
+    ↓
 Install Dependencies
-   ↓
+    ↓
 Lint
-   ↓
+    ↓
 Test
-   ↓
+    ↓
 Build
 ```
 
-### Main goal of CI
-
-Find problems **early**, before they reach production.
+The main purpose is to **find problems early**.
 
 For example:
 
-- Code has a syntax error
 - Tests fail
+- Lint fails
 - Build fails
 - Dependencies are broken
-- Linting fails
+- Code introduces an error
+
+### Easy definition
+
+> **CI = automatically validate code changes before they move further in the delivery process.**
 
 ---
 
 ## 3. What is CD?
 
-CD means **Continuous Delivery** or **Continuous Deployment**, depending on how the organization uses the term.
+CD can mean:
+
+- **Continuous Delivery**
+- **Continuous Deployment**
 
 ### Continuous Delivery
 
-The application is automatically prepared for release, but production deployment may require manual approval.
+The application is automatically built, tested, and prepared for release, but production deployment may require a manual approval.
 
 ```text
 Code
@@ -63,16 +96,18 @@ CI
  ↓
 Build
  ↓
+Test
+ ↓
 Staging
  ↓
-Approval
+Manual Approval
  ↓
 Production
 ```
 
 ### Continuous Deployment
 
-The validated application is automatically deployed to production.
+After the automated checks pass, the application is automatically deployed to production.
 
 ```text
 Code
@@ -81,47 +116,185 @@ CI
  ↓
 Build
  ↓
+Test
+ ↓
 Production
 ```
 
-### Easy way to remember
+### Easy definition
 
-> **CI checks the code. CD delivers the code.**
+> **CD = automatically deliver or deploy validated software.**
 
 ---
 
-## 4. What is a Build?
+## 4. CI vs Continuous Delivery vs Continuous Deployment
 
-A **build** converts source code into something that can be used or deployed.
+The easiest way to remember the difference:
 
-For a Node.js/Next.js application, for example:
+| Concept | Main purpose |
+|---|---|
+| **CI** | Integrate and validate code |
+| **Continuous Delivery** | Keep software ready for release |
+| **Continuous Deployment** | Automatically release to production |
+
+Think of the complete flow:
+
+```text
+             CI
+             ↓
+       Build + Test
+             ↓
+   Continuous Delivery
+             ↓
+      Ready to Release
+             ↓
+   Manual Approval
+             ↓
+        Production
+
+OR
+
+             CI
+             ↓
+       Build + Test
+             ↓
+ Continuous Deployment
+             ↓
+        Production
+```
+
+### Interview point
+
+> **Continuous Delivery usually has a release/approval step before production, while Continuous Deployment automatically releases validated changes to production.**
+
+---
+
+## 5. What Happens When You `git push`?
+
+Suppose you change your application and run:
+
+```bash
+git add .
+git commit -m "Add login feature"
+git push origin main
+```
+
+A simplified flow is:
+
+```text
+Developer
+    ↓
+git push
+    ↓
+GitHub Repository
+    ↓
+Webhook / CI Trigger
+    ↓
+Jenkins
+    ↓
+Pipeline Starts
+```
+
+Important:
+
+> **git push itself does not deploy your application.**
+
+It only sends your committed code to the remote Git repository.
+
+A CI/CD system can then detect that change and start the pipeline.
+
+---
+
+## 6. What Happens When a PR is Merged?
+
+A common team workflow looks like this:
+
+```text
+Developer
+    ↓
+Feature Branch
+    ↓
+Pull Request
+    ↓
+CI Checks
+    ↓
+Code Review
+    ↓
+PR Merged
+    ↓
+main branch changes
+    ↓
+Jenkins / CI Pipeline
+    ↓
+Build + Test + Deploy
+```
+
+For example:
+
+1. Developer creates a feature branch.
+2. Developer opens a Pull Request.
+3. CI validates the PR.
+4. Reviewers approve it.
+5. PR is merged into `main`.
+6. The merge changes the `main` branch.
+7. Jenkins can detect the change.
+8. The production pipeline may start, depending on the configuration.
+
+### Important
+
+A PR merge **can trigger deployment**, but it does not automatically have to.
+
+It depends on the CI/CD pipeline configuration.
+
+---
+
+## 7. What is a Build?
+
+A **build** is the process of converting source code into an application output that can be run, packaged, or deployed.
+
+For example, a Next.js application may use:
 
 ```bash
 npm run build
 ```
 
-The build may generate output such as:
+The build process can:
+
+- Compile code
+- Bundle files
+- Optimize assets
+- Validate the application
+- Generate production output
+
+Simple mental model:
 
 ```text
-dist/
-.next/
+Source Code
+    ↓
+   Build
+    ↓
+Production-ready Output
 ```
 
-The exact output depends on the technology.
+### Important distinction
+
+**Build is a process.**
+
+The output produced by that process can become an **artifact**.
 
 ---
 
-## 5. What is an Artifact?
+## 8. What is an Artifact?
 
-An **artifact** is a useful output produced by the build that can be stored or deployed.
+An **artifact** is a useful output produced by a build that can be stored, transferred, or deployed.
 
 Examples:
 
 ```text
+application.zip
 dist/
 .next/
-application.zip
-.jar file
+.jar
 Docker image
 ```
 
@@ -129,235 +302,197 @@ Simple flow:
 
 ```text
 Source Code
-    ↓
-   Build
-    ↓
- Artifact
-    ↓
+     ↓
+    Build
+     ↓
+  Artifact
+     ↓
  Deployment
 ```
 
-### Important distinction
+### Remember
 
-**Build ≠ Artifact ≠ Deployment**
+```text
+Build      = process
+Artifact   = output
+Deployment = making the version available
+```
 
-- Build = process
-- Artifact = output
-- Deployment = making the version available in an environment
+This distinction becomes very important when we learn artifact management later.
 
 ---
 
-## 6. What is an Environment?
+## 9. What is a Server?
 
-An environment is a place where the application runs.
+A **server** is a computer or computing environment that runs services or applications and responds to requests.
 
-Common environments:
-
-```text
-Development
-     ↓
-   Staging
-     ↓
- Production
-```
-
-They can have different:
-
-- Databases
-- API URLs
-- Environment variables
-- Credentials
-- Domains
-- External services
-
-For example:
+For a web application:
 
 ```text
-Development → localhost
-Staging     → staging.example.com
-Production  → example.com
+User Browser
+     ↓
+ Internet
+     ↓
+ Server
+     ↓
+Your Application
+     ↓
+Database / Other Services
 ```
+
+A server can be:
+
+- A physical machine
+- A virtual machine
+- A cloud server
+- A container environment
+- A Kubernetes workload/node environment
+
+For example, your Next.js application might eventually run inside a Docker container on a server.
+
+### Easy definition
+
+> **A server is a computing environment that runs a service/application and makes it available to other systems or users.**
 
 ---
 
-## 7. What is Deployment?
+## 10. What Does "Deploying to Production" Actually Mean?
 
-**Deployment** means making a particular application version available in an environment.
+**Production** is the environment used by real users.
+
+When we say:
+
+> "Deploy the application to production"
+
+we mean that a specific version of the application is placed into the production environment and started so real users can access it.
 
 Example:
-
-```text
-Docker Image
-codebuddy:9ab42ef
-       ↓
-   Production
-       ↓
-Application Running
-```
-
-Deployment can happen using:
-
-- Docker
-- SSH
-- Kubernetes
-- Cloud platforms
-- Other deployment systems
-
----
-
-## 8. What is a Pipeline?
-
-A **pipeline** is a sequence of automated steps used to build, test, and deploy an application.
-
-Example:
-
-```text
-Checkout
-   ↓
-Install
-   ↓
-Lint
-   ↓
-Test
-   ↓
-Build
-   ↓
-Deploy
-```
-
-Jenkins can automate this entire process.
-
----
-
-## 9. What is Jenkins?
-
-**Jenkins is an automation server** commonly used to create and run CI/CD pipelines.
-
-Jenkins can:
-
-- Get code from Git
-- Run tests
-- Run builds
-- Build Docker images
-- Push images to a registry
-- Deploy applications
-- Run health checks
-- Trigger rollback workflows
-
-Important:
-
-> Jenkins is mainly the **orchestrator**. It tells other tools/commands what to execute.
-
-For example:
-
-```text
-Jenkins
-  ↓
-npm
-  ↓
-Tests / Build
-
-Jenkins
-  ↓
-Docker
-  ↓
-Docker Image
-
-Jenkins
-  ↓
-kubectl
-  ↓
-Kubernetes
-```
-
----
-
-## 10. Complete Basic CI/CD Flow
-
-The most important diagram from this lesson:
 
 ```text
 Developer
     ↓
-Git Repository
+GitHub
     ↓
-     CI
-    ↓
-Checkout
-    ↓
-Install
-    ↓
-Lint
-    ↓
-Test
+Jenkins
     ↓
 Build
     ↓
- Artifact
+Artifact / Docker Image
     ↓
-   CD
+Production Server
     ↓
- Staging
+Application Starts
     ↓
-Production
+example.com
+    ↓
+Real Users
+```
+
+A production deployment may involve:
+
+- Copying an artifact
+- Pulling a Docker image
+- Starting/replacing a container
+- Updating application configuration
+- Running database migrations
+- Restarting a service
+- Running health checks
+- Verifying the application
+
+### Important
+
+Deployment is **not simply "uploading files."**
+
+It is the process of making a particular application version **available and operational** in the target environment.
+
+---
+
+# ⭐ Complete Mental Model
+
+Put everything together:
+
+```text
+Developer writes code
+        ↓
+   git commit
+        ↓
+    git push
+        ↓
+   GitHub
+        ↓
+   CI Trigger
+        ↓
+     Jenkins
+        ↓
+   Checkout Code
+        ↓
+      Build
+        ↓
+      Test
+        ↓
+    Artifact
+        ↓
+      Deploy
+        ↓
+    Production
+        ↓
+   Real Users
 ```
 
 ---
 
-## ⭐ Important Interview Points
+# ⭐ Interview Points
 
 ### What is CI?
 
-> Continuous Integration is the practice of frequently integrating code changes and automatically validating them through steps such as build, lint, and tests.
+> **Continuous Integration is the practice of frequently integrating code changes and automatically validating them through activities such as linting, testing, and building.**
 
 ### What is CD?
 
-> Continuous Delivery/Deployment automates the process of delivering or deploying validated software to environments.
+> **Continuous Delivery/Deployment automates the process of delivering or deploying validated software to environments.**
 
-### CI vs CD?
+### Continuous Delivery vs Continuous Deployment?
 
-```text
-CI
-↓
-Validate code
+> **Continuous Delivery keeps software ready for release, usually with a manual production approval. Continuous Deployment automatically releases validated changes to production.**
 
-CD
-↓
-Deliver / Deploy code
-```
+### Does `git push` deploy the application?
+
+> **No. `git push` sends code to the remote repository. A configured CI/CD pipeline can then build, test, and deploy that code.**
+
+### What is a build?
+
+> **A build is the process of converting source code into a runnable or deployable output.**
 
 ### What is an artifact?
 
-> A build output that can be stored, transferred, or deployed.
+> **An artifact is a useful output produced by a build that can be stored, transferred, or deployed.**
 
-### What is a pipeline?
+### What is a server?
 
-> A sequence of automated steps used to validate, build, and deploy software.
+> **A server is a computing environment that runs applications or services and responds to requests.**
 
-### What is Jenkins?
+### What does production deployment mean?
 
-> Jenkins is an automation server used to orchestrate CI/CD pipelines.
+> **It means making a specific application version available and operational in the production environment for real users.**
 
 ---
 
-## 🧠 Remember
+# 🧠 One-Line Memory
 
 ```text
-CODE
- ↓
-CI
- ↓
-BUILD
- ↓
-ARTIFACT
- ↓
-CD
- ↓
-DEPLOYMENT
- ↓
-ENVIRONMENT
+git push
+   ↓
+Code reaches GitHub
+   ↓
+CI validates it
+   ↓
+Build creates output
+   ↓
+Artifact is produced
+   ↓
+CD delivers/deploys it
+   ↓
+Production runs the version
 ```
 
-**One-line memory:**
-
-> **CI validates the code; CD delivers/deploys the validated software.**
+> **CI checks the code. CD delivers/deploys the validated software. Deployment makes a specific version available in an environment.**
